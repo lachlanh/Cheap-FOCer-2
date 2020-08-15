@@ -51,6 +51,8 @@ const float THROTTLE_DUTY_MID = 0.5;
 const float THROTTLE_DUTY_MAX = 0.8;
 
 const int PAS_TIMEOUT = 400; //ms to stop power after pedal stopped
+#define FILTER_SAMPLES					5
+
 
 // Private functions
 static void pwm_callback(void);
@@ -105,29 +107,11 @@ static THD_FUNCTION(my_thread, arg) {
 	chRegSetThreadName("App Custom PAS");
 
 	is_running = true;
-
-        // My code here
-       
-        //        palEnablePadEvent (HW_ICU_GPIO, HW_ICU_PIN, PAL_EVENT_MODE_FALLING_EDGE);
-        
-
-	// Example of using the experiment plot
-//	chThdSleepMilliseconds(8000);
-//	commands_init_plot("Sample", "Voltage");
-//	commands_plot_add_graph("Temp Fet");
-//	commands_plot_add_graph("Input Voltage");
-//	float samp = 0.0;
-//
-//	for(;;) {
-//		commands_plot_set_graph(0);
-//		commands_send_plot_points(samp, mc_interface_temp_fet_filtered());
-//		commands_plot_set_graph(1);
-//		commands_send_plot_points(samp, GET_INPUT_VOLTAGE());
-//		samp++;
-//		chThdSleepMilliseconds(10);
-//	}
-        //bool pas_input = true;
-        //bool pas_previous = true;
+        //graph of throttleDuty setup
+        commands_init_plot("Sample", "Throttle Duty");
+	commands_plot_add_graph("ThrottleDuty");
+        commands_plot_add_graph("ThrottleRamp");
+        float samp = 0.0;
 
         bool pas_input = true;
         bool pas_previous = true;
@@ -143,10 +127,6 @@ static THD_FUNCTION(my_thread, arg) {
 			is_running = false;
 			return;
 		}
-
-		timeout_reset(); // Reset timeout if everything is OK.
-
-		// Run your logic here. A lot of functionality is available in mc_interface.h.
 
                 //PAS bits
                 pas_input = palReadPad(HW_ICU_GPIO, HW_ICU_PIN);
@@ -165,32 +145,35 @@ static THD_FUNCTION(my_thread, arg) {
 
                 //from adc filter the sample
                 // Optionally apply a mean value filter
-		/*if (config.use_filter) {
-			static float filter_buffer[FILTER_SAMPLES];
-			static int filter_ptr = 0;
-
-			filter_buffer[filter_ptr++] = pwr;
-			if (filter_ptr >= FILTER_SAMPLES) {
-				filter_ptr = 0;
-			}
-
-			pwr = 0.0;
-			for (int i = 0;i < FILTER_SAMPLES;i++) {
-				pwr += filter_buffer[i];
-			}
-			pwr /= FILTER_SAMPLES;
-                }*/
-
-
+		//if (config.use_filter{
+                static float filter_buffer[FILTER_SAMPLES];
+                static int filter_ptr = 0;
+                static float throttleFilter = 0.0;
+                
+                filter_buffer[filter_ptr++] = throttleDuty;
+                if (filter_ptr >= FILTER_SAMPLES) {
+                  filter_ptr = 0;
+                }
+                
+                throttleFilter = 0.0;
+                for (int i = 0;i < FILTER_SAMPLES;i++) {
+                  throttleFilter += filter_buffer[i];
+                }
+                throttleFilter /= FILTER_SAMPLES;
+                //}
+                /*
+                static float throttle_ramp = 0.0;
                 if (throttleDuty > THROTTLE_OFF) {
                   
                   // Apply ramping
                   static systime_t last_ramp_time = 0;
-                  static float throttle_ramp = 0.0;
-                  static float ramp_time = 0.5; 
+                  
+                  static float ramp_time = 0.4; 
 
                   if (ramp_time > 0.01) {
                     const float ramp_step = (float)ST2MS(chVTTimeElapsedSinceX(last_ramp_time)) / (ramp_time * 1000.0);
+                    commands_plot_set_graph(1);
+                    commands_send_plot_points(samp, ramp_step);
                     if (throttle_ramp < throttleDuty) {
                       if ((throttle_ramp + ramp_step < throttleDuty)) {
                         throttle_ramp += ramp_step;
@@ -207,13 +190,13 @@ static THD_FUNCTION(my_thread, arg) {
                     last_ramp_time = chVTGetSystemTimeX();
                     //throttleDuty = throttle_ramp;
                   }
-
+                  
                   if (ST2MS (chVTTimeElapsedSinceX (report_time)) > 500) {
                     report_time = chVTGetSystemTimeX ();
                     //TODO try and plot this
-                    commands_printf ("ramped throttleDuty: %f throttle_ramp: %f", throttleDuty, throttle_ramp);
-                  }
-                }
+                    commands_printf ("ramped  throttleDuty: %f throttle_ramp: %f last_time: %d", throttleDuty, throttle_ramp, last_time);
+                    }
+                    }*/
 
                 
                 
@@ -222,14 +205,22 @@ static THD_FUNCTION(my_thread, arg) {
                 } else {
                   mc_interface_set_duty(throttleDuty);
                 }
-                //                timeout_reset ();
+                timeout_reset ();
 
+                //plot the throttleduty
+                commands_plot_set_graph(0);
+		commands_send_plot_points(samp, throttleDuty);
+                //commands_plot_set_graph(1);
+                //commands_send_plot_points(samp, throttle_ramp);
+                samp++;
+                
                 //TODO LH need a condition so if time since last signal > some_timeout (100ms
                 if (last_time != 0 && ST2MS (chVTTimeElapsedSinceX (last_time)) > 400) {
                   //check if the motor is running and set to off
                   if (mc_interface_get_duty_cycle_now() > 0.0) {
                     mc_interface_set_current (THROTTLE_OFF);
                     last_time = 0;
+                    throttleDuty = 0;
                     commands_printf("PAS TIMEOUT");
                   }
                 }
