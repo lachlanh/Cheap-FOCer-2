@@ -187,6 +187,7 @@
 //#include			"appconf_example_ppm.h"
 //#include			"appconf_custom.h"
 //#include			"appconf_ellwee.h"
+#include "appconf_pas.h"
 
 /*
  * Set APP_CUSTOM_TO_USE to the name of the main C file of the custom application.
