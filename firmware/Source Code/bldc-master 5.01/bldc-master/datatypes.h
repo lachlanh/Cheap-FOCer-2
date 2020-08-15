@@ -458,6 +458,11 @@ typedef struct {
 	uint32_t update_rate_hz;
 } adc_config;
 
+typedef struct {
+  float target_duty;
+  bool send_power;
+} custom_config;
+
 // Nunchuk control types
 typedef enum {
 	CHUK_CTRL_TYPE_NONE = 0,

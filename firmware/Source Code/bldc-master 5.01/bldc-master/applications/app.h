@@ -72,6 +72,6 @@ float app_balance_get_adc2(void);
 // Custom apps
 void app_custom_start(void);
 void app_custom_stop(void);
-void app_custom_configure(app_configuration *conf);
+void app_custom_configure(custom_config *conf);
 
 #endif /* APP_H_ */
