@@ -120,6 +120,7 @@ void app_set_configuration(app_configuration *conf) {
 #ifdef APP_CUSTOM_TO_USE
 		hw_stop_i2c();
 		app_custom_start();
+                app_uartcomm_start();
 #endif
 		break;
 
@@ -133,7 +134,7 @@ void app_set_configuration(app_configuration *conf) {
 	app_nunchuk_configure(&appconf.app_chuk_conf);
 
 #ifdef APP_CUSTOM_TO_USE
-	app_custom_configure(&appconf);
+	app_custom_configure(&appconf.app_custom_conf);
 #endif
 
 	rfhelp_update_conf(&appconf.app_nrf_conf);

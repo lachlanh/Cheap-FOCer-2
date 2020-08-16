@@ -677,6 +677,8 @@ typedef struct {
 	// Balance application settings
 	balance_config app_balance_conf;
 
+	custom_config app_custom_conf;
+
 	// IMU Settings
 	imu_config imu_conf;
 } app_configuration;
