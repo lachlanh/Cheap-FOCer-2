@@ -148,7 +148,7 @@ static THD_FUNCTION(my_thread, arg) {
                 
                 if (switchOn1) {
                   targetDuty = THROTTLE_OFF;
-                } else if (switchOn2) {
+                } else if (switchOn3) {
                   targetDuty = THROTTLE_DUTY_MAX;//TODO LH looks like adc2 is always on on second focer.
                 } else {
                   targetDuty = THROTTLE_DUTY_MID;
