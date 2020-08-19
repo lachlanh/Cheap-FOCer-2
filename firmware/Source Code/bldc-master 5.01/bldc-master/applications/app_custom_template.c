@@ -120,6 +120,9 @@ static THD_FUNCTION(my_thread, arg) {
         static systime_t report_time = 0;
         float cadence = 0.0;
         float throttleDuty = 0.0;
+        bool switchOn1 = false;
+        bool switchOn3 = false;
+        float targetDuty = THROTTLE_OFF;
 
 	for(;;) {
 		// Check if it is time to stop.
@@ -128,6 +131,35 @@ static THD_FUNCTION(my_thread, arg) {
 			return;
 		}
 
+                //switches
+
+                float adc1 = (float)ADC_Value[ADC_IND_EXT];
+                if (adc1 >= 2500) {
+                  switchOn3 = true;
+                } else {
+                  switchOn3 = false;
+                }
+                float adc2 = (float)ADC_Value[ADC_IND_EXT2];
+                if (adc2 >= 2500) {
+                  switchOn1 = true;
+                } else {
+                  switchOn1 = false;
+                }
+                
+                if (switchOn1) {
+                  targetDuty = THROTTLE_OFF;
+                } else if (switchOn2) {
+                  targetDuty = THROTTLE_DUTY_MAX;//TODO LH looks like adc2 is always on on second focer.
+                } else {
+                  targetDuty = THROTTLE_DUTY_MID;
+                }
+                
+                if (ST2MS (chVTTimeElapsedSinceX (report_time)) > 500) {
+                  report_time = chVTGetSystemTimeX ();
+                  //TODO try and plot this
+                  commands_printf("adc1: %f adc2: %f targetDuty: %f ---", adc1, adc2, targetDuty);
+                }
+                
                 //PAS bits
                 pas_input = palReadPad(HW_ICU_GPIO, HW_ICU_PIN);
                 if (pas_input != pas_previous) {
@@ -136,7 +168,7 @@ static THD_FUNCTION(my_thread, arg) {
                     last_time = chVTGetSystemTimeX ();
 
                     cadence = calculateCadence (elapsed_time, 12);
-                    throttleDuty = calculateThrottleDuty (THROTTLE_DUTY_MID, cadence);
+                    throttleDuty = calculateThrottleDuty (targetDuty, cadence);
                     
                     commands_printf ("PAS CHANGED pas_input := %d elapsed time: %d cadence: %f throttleDuty : %f", pas_input, elapsed_time, cadence, throttleDuty);
                   }
