@@ -134,13 +134,13 @@ static THD_FUNCTION(my_thread, arg) {
                 //switches
 
                 float adc1 = (float)ADC_Value[ADC_IND_EXT];
-                if (adc1 >= 2500) {
+                if (adc1 > 2500.0) {
                   switchOn3 = true;
                 } else {
                   switchOn3 = false;
                 }
                 float adc2 = (float)ADC_Value[ADC_IND_EXT2];
-                if (adc2 >= 2500) {
+                if (adc2 > 2500.0) {
                   switchOn1 = true;
                 } else {
                   switchOn1 = false;
